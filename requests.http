@@ -1,0 +1,65 @@
+### Змінні
+@baseUrl = http://localhost:3000
+@id = 1
+@nonExistentId = 9999
+
+### 1. GET /announcements без параметрів
+GET {{baseUrl}}/announcements
+
+### 2. GET /announcements з параметром search
+GET {{baseUrl}}/announcements?search=тест
+
+### 3. GET /announcements з параметрами sort та page
+GET {{baseUrl}}/announcements?sort=oldest&page=1
+
+### 4. GET /announcements/:id з існуючим ID
+GET {{baseUrl}}/announcements/{{id}}
+
+### 5. GET /announcements/:id з неіснуючим ID
+GET {{baseUrl}}/announcements/{{nonExistentId}}
+
+### 6. POST /announcements з валідними даними
+POST {{baseUrl}}/announcements
+Content-Type: application/json
+
+{
+  "title": "Тестове оголошення",
+  "description": "Дуже детальний опис цього чудового оголошення",
+  "price": 1500,
+  "category": "sale",
+  "contactInfo": "0991234567"
+}
+
+### 7. POST /announcements з невалідними даними (ваділація celebrate)
+POST {{baseUrl}}/announcements
+Content-Type: application/json
+
+{
+  "title": "Ко",
+  "description": "мало",
+  "price": -10,
+  "category": "wrong_category",
+  "contactInfo": "12"
+}
+
+### 8. PATCH /announcements/:id з частковими даними
+PATCH {{baseUrl}}/announcements/{{id}}
+Content-Type: application/json
+
+{
+  "price": 9999
+}
+
+### 9. PATCH /announcements/:id з неіснуючим ID
+PATCH {{baseUrl}}/announcements/{{nonExistentId}}
+Content-Type: application/json
+
+{
+  "price": 9999
+}
+
+### 10. DELETE /announcements/:id
+DELETE {{baseUrl}}/announcements/{{id}}
+
+### 11. DELETE /announcements/:id з неіснуючим ID
+DELETE {{baseUrl}}/announcements/{{nonExistentId}}
