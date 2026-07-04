@@ -1,4 +1,14 @@
 import prisma from '../../prisma/client.js';
+import { v2 as cloudinary } from 'cloudinary';
+import fs from 'fs/promises';
+import logger from '../../src/logger.js';
+
+// Налаштування Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export const getAllAnnouncements = async (req, res, next) => {
   try {
@@ -37,11 +47,25 @@ export const getAnnouncementById = async (req, res, next) => {
 
 export const createAnnouncement = async (req, res, next) => {
   try {
+    let imageUrl = null;
+
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path, { folder: 'announcements' });
+      imageUrl = result.secure_url;
+      await fs.unlink(req.file.path); // Видаляємо локальний файл
+      logger.info(`Photo uploaded to Cloudinary: ${imageUrl}`);
+    }
+
     const announcement = await prisma.announcement.create({
-      data: { ...req.body, userId: req.user.id }
+      data: { ...req.body, price: Number(req.body.price), imageUrl, userId: req.user.id }
     });
+    
+    logger.info(`Announcement created with ID: ${announcement.id}`);
     res.status(201).json(announcement);
-  } catch (error) { next(error); }
+  } catch (error) {
+    if (req.file) await fs.unlink(req.file.path).catch(() => {}); // Очищення при помилці
+    next(error);
+  }
 };
 
 export const updateAnnouncement = async (req, res, next) => {
@@ -50,15 +74,31 @@ export const updateAnnouncement = async (req, res, next) => {
     const announcement = await prisma.announcement.findUniqueOrThrow({ where: { id } });
     
     if (announcement.userId !== req.user.id) {
+      if (req.file) await fs.unlink(req.file.path).catch(() => {});
       return res.status(403).json({ error: 'Access denied' });
     }
 
+    let imageUrl = announcement.imageUrl;
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path, { folder: 'announcements' });
+      imageUrl = result.secure_url;
+      await fs.unlink(req.file.path);
+      logger.info(`Updated photo for announcement ${id}`);
+    }
+
+    const updateData = { ...req.body };
+    if (updateData.price) updateData.price = Number(updateData.price);
+    updateData.imageUrl = imageUrl;
+
     const updatedAnnouncement = await prisma.announcement.update({
       where: { id },
-      data: req.body
+      data: updateData
     });
     res.json(updatedAnnouncement);
-  } catch (error) { next(error); }
+  } catch (error) {
+    if (req.file) await fs.unlink(req.file.path).catch(() => {});
+    next(error);
+  }
 };
 
 export const deleteAnnouncement = async (req, res, next) => {

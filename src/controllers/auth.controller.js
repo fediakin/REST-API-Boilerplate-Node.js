@@ -1,3 +1,4 @@
+import logger from '../../src/logger.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import createError from 'http-errors';
@@ -13,7 +14,6 @@ const generateTokens = (user) => {
 export const register = async (req, res, next) => {
   try {
     const { username, password, name } = req.body;
-
     const existingUser = await prisma.user.findUnique({ where: { username } });
     if (existingUser) throw createError(409, 'User with this username already exists');
 
@@ -23,13 +23,12 @@ export const register = async (req, res, next) => {
     });
 
     const { accessToken, refreshToken } = generateTokens(user);
-
-    await prisma.refreshToken.create({
-      data: { token: refreshToken, userId: user.id }
-    });
+    await prisma.refreshToken.create({ data: { token: refreshToken, userId: user.id } });
 
     res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
     const { password: _, ...userWithoutPassword } = user;
+    
+    logger.info(`New user registered: ${username}`); 
     res.status(201).json({ user: userWithoutPassword, accessToken, refreshToken });
   } catch (error) { next(error); }
 };
@@ -37,7 +36,6 @@ export const register = async (req, res, next) => {
 export const login = async (req, res, next) => {
   try {
     const { username, password } = req.body;
-
     const user = await prisma.user.findUnique({ where: { username } });
     if (!user) throw createError(401, 'Invalid credentials');
 
@@ -45,14 +43,13 @@ export const login = async (req, res, next) => {
     if (!isPasswordValid) throw createError(401, 'Invalid credentials');
 
     const { accessToken, refreshToken } = generateTokens(user);
-
-    await prisma.refreshToken.create({
-      data: { token: refreshToken, userId: user.id }
-    });
+    await prisma.refreshToken.create({ data: { token: refreshToken, userId: user.id } });
 
     res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
-    const { password: _, ...userWithoutPassword } = user;
-    res.json({ user: userWithoutPassword, accessToken, refreshToken });
+    
+    logger.info(`User ${username} successfully logged in`); 
+    
+    res.status(200).json({ accessToken, refreshToken }); 
   } catch (error) { next(error); }
 };
 
