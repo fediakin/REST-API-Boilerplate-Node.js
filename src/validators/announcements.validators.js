@@ -24,6 +24,7 @@ const announcementBodyRules = {
   category: Joi.string().valid('sale', 'service', 'job', 'other'),
   contactInfo: Joi.string().min(5)
 };
+
 export const createValidator = celebrate({
   [Segments.BODY]: Joi.object().keys({
     title: announcementBodyRules.title.required(),

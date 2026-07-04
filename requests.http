@@ -1,65 +1,86 @@
 ### Змінні
 @baseUrl = http://localhost:3000
 @id = 1
-@nonExistentId = 9999
 
-### 1. GET /announcements без параметрів
+### ================= AUTH =================
+
+### 1. Реєстрація користувача
+# @name register
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "ivan_petrenko",
+  "password": "password123",
+  "name": "Іван"
+}
+
+### 2. Вхід (Логін)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "ivan_petrenko",
+  "password": "password123"
+}
+
+### Записуємо токен у змінну (REST Client обробляє це автоматично)
+@token = {{login.response.body.accessToken}}
+
+### 3. Отримання профілю
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+### 4. Отримання профілю БЕЗ токена (має бути 401)
+GET {{baseUrl}}/auth/me
+
+### 5. Оновлення токена
+POST {{baseUrl}}/auth/refresh
+
+### ================= ANNOUNCEMENTS =================
+
+### 6. Отримання всіх оголошень (Публічний)
 GET {{baseUrl}}/announcements
 
-### 2. GET /announcements з параметром search
-GET {{baseUrl}}/announcements?search=тест
-
-### 3. GET /announcements з параметрами sort та page
-GET {{baseUrl}}/announcements?sort=oldest&page=1
-
-### 4. GET /announcements/:id з існуючим ID
-GET {{baseUrl}}/announcements/{{id}}
-
-### 5. GET /announcements/:id з неіснуючим ID
-GET {{baseUrl}}/announcements/{{nonExistentId}}
-
-### 6. POST /announcements з валідними даними
+### 7. Створення оголошення (Захищений)
 POST {{baseUrl}}/announcements
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
-  "title": "Тестове оголошення",
-  "description": "Дуже детальний опис цього чудового оголошення",
-  "price": 1500,
+  "title": "Мій ноутбук",
+  "description": "Новий ноутбук на продаж",
+  "price": 1000,
   "category": "sale",
-  "contactInfo": "0991234567"
+  "contactInfo": "1234567"
 }
 
-### 7. POST /announcements з невалідними даними (ваділація celebrate)
+### 8. Створення оголошення БЕЗ токена (має бути 401)
 POST {{baseUrl}}/announcements
 Content-Type: application/json
 
 {
-  "title": "Ко",
-  "description": "мало",
-  "price": -10,
-  "category": "wrong_category",
-  "contactInfo": "12"
+  "title": "Мій ноутбук",
+  "description": "Новий ноутбук на продаж",
+  "price": 1000,
+  "category": "sale",
+  "contactInfo": "1234567"
 }
 
-### 8. PATCH /announcements/:id з частковими даними
+### 9. Часткове оновлення оголошення (Захищений)
 PATCH {{baseUrl}}/announcements/{{id}}
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "price": 9999
 }
 
-### 9. PATCH /announcements/:id з неіснуючим ID
-PATCH {{baseUrl}}/announcements/{{nonExistentId}}
-Content-Type: application/json
-
-{
-  "price": 9999
-}
-
-### 10. DELETE /announcements/:id
+### 10. Видалення оголошення (Захищений)
 DELETE {{baseUrl}}/announcements/{{id}}
+Authorization: Bearer {{token}}
 
-### 11. DELETE /announcements/:id з неіснуючим ID
-DELETE {{baseUrl}}/announcements/{{nonExistentId}}
+### 11. Вихід з системи (Logout)
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{token}}
